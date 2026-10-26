@@ -148,20 +148,70 @@ pnpm start
 
 ## 🐶 Bruno Workspace & Collection
 
-The repository includes a ready-to-use [Bruno](https://www.usebruno.com/) workspace and collection in the `bruno/` directory.
+The repository includes a ready-to-use [Bruno](https://www.usebruno.com/) workspace and collection in the `bruno/` directory covering every endpoint, error scenario, environment configuration, and dynamic variable propagation.
+
+### Workspace & Collection Structure
+
+```text
+bruno/
+├── workspace.yml                           # Bruno Workspace definition
+└── collections/
+    └── clean-architecture-api/
+        ├── bruno.json                      # Collection manifest
+        ├── collection.bru                  # Collection headers
+        ├── environments/
+        │   └── local.bru                   # {{baseUrl}} and {{productId}} variables
+        ├── Health/
+        │   └── Health Check.bru            # GET {{baseUrl}}/health
+        └── Products/
+            ├── List Products.bru           # GET {{baseUrl}}/api/products
+            ├── Create Product.bru          # POST {{baseUrl}}/api/products (auto-captures productId)
+            ├── Get Product by ID.bru       # GET {{baseUrl}}/api/products/{{productId}}
+            ├── Update Product.bru          # PUT {{baseUrl}}/api/products/{{productId}}
+            ├── Delete Product.bru          # DELETE {{baseUrl}}/api/products/{{productId}}
+            └── Errors/
+                ├── Create Product (Validation Error).bru # POST invalid payload (400)
+                └── Get Product (Not Found).bru           # GET non-existent product (404)
+```
+
+### Endpoints in the Collection
+
+| Name | Method | URL | Description |
+| --- | --- | --- | --- |
+| **Health Check** | `GET` | `{{baseUrl}}/health` | Server status and health check |
+| **List Products** | `GET` | `{{baseUrl}}/api/products` | Retrieve all products |
+| **Create Product** | `POST` | `{{baseUrl}}/api/products` | Create a new product and auto-set `productId` |
+| **Get Product by ID** | `GET` | `{{baseUrl}}/api/products/{{productId}}` | Fetch single product by ID |
+| **Update Product** | `PUT` | `{{baseUrl}}/api/products/{{productId}}` | Update product details |
+| **Delete Product** | `DELETE` | `{{baseUrl}}/api/products/{{productId}}` | Delete product by ID |
+| **Create Product (Validation Error)** | `POST` | `{{baseUrl}}/api/products` | Test 400 Bad Request validation response |
+| **Get Product (Not Found)** | `GET` | `{{baseUrl}}/api/products/non-existent-id` | Test 404 Not Found domain error response |
 
 ### How to Open in Bruno
 
-- **As a Workspace**: Open Bruno, click **Workspaces** > **Open Workspace**, and select the `bruno` folder.
-- **As a Collection**: Open Bruno, click **Open Collection**, and select `bruno/collections/clean-architecture-api`.
+1. **Open as a Workspace**: In Bruno, go to **Workspaces** > **Open Workspace**, and select the `bruno/` folder.
+2. **Open as a Collection**: In Bruno, click **Open Collection**, and select the `bruno/collections/clean-architecture-api` folder.
+3. **Select Environment**: Pick `local` from the environment dropdown in the top-right corner of Bruno.
 
 ### Environment & Variables
 
-- **Environment**: Select `local` from the environment dropdown in Bruno (configured in `environments/local.bru`).
-- **Variables**:
+- **Configured in [`environments/local.bru`](bruno/collections/clean-architecture-api/environments/local.bru)**:
   - `{{baseUrl}}`: Defaults to `http://localhost:3000`.
-  - `{{productId}}`: Defaults to `1` (seeded item).
-- **Auto-capturing IDs**: Running the **Create Product** request runs a post-response script (`script:post-response`) that automatically updates `{{productId}}` with the newly created product's UUID, making subsequent Get, Update, and Delete requests work instantly without manual copy-pasting!
+  - `{{productId}}`: Initialized to `1` (one of the seeded demo items).
+
+### Dynamic Variable Propagation (Auto-Capturing IDs)
+
+When you send the **Create Product** request, a `script:post-response` automatically extracts the generated UUID from the server response:
+
+```javascript
+script:post-response {
+  if (res.body && res.body.data && res.body.data.id) {
+    bru.setVar("productId", res.body.data.id);
+  }
+}
+```
+
+This updates the `{{productId}}` runtime variable on the fly so subsequent **Get Product by ID**, **Update Product**, and **Delete Product** requests immediately use the new product's ID without manual copy-pasting.
 
 
 ---
