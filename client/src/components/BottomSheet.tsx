@@ -1,58 +1,152 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState } from 'react';
+import { m, AnimatePresence } from 'motion/react';
 import { X, Loader2 } from 'lucide-react';
-import { Product, CreateProductDTO, UpdateProductDTO } from '../types.js';
-import { productFormSchema } from '../schemas/product.schema.js';
+import { Product } from '../types.js';
+import { ProductFormValues, productFormSchema } from '../schemas/product.schema.js';
+import { getErrorMessage } from '../lib/utils.js';
 import { Button } from './ui/button.js';
 import { Input } from './ui/input.js';
 import { Textarea } from './ui/textarea.js';
 
+type ProductField = keyof ProductFormValues | 'form';
+type ProductFieldErrors = Partial<Record<ProductField, string>>;
+
 interface BottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateProductDTO | UpdateProductDTO) => Promise<void>;
+  onSubmit: (data: ProductFormValues) => Promise<void>;
   initialData?: Product | null;
   isSubmitting: boolean;
 }
 
-export const BottomSheet: React.FC<BottomSheetProps> = ({
-  isOpen,
-  onClose,
-  onSubmit,
+interface ProductFormProps {
+  initialData?: Product | null;
+  onSubmit: (data: ProductFormValues) => Promise<void>;
+  onClose: () => void;
+  isSubmitting: boolean;
+}
+
+interface ProductFieldProps {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+  required?: boolean;
+  type?: 'text' | 'number';
+  step?: string;
+  placeholder?: string;
+  multiline?: boolean;
+  rows?: number;
+}
+
+function collectFieldErrors(
+  issues: { path: PropertyKey[]; message: string }[]
+): ProductFieldErrors {
+  const errors: ProductFieldErrors = {};
+
+  for (const issue of issues) {
+    const fieldName =
+      (issue.path[0]?.toString() as ProductField | undefined) ?? 'form';
+    if (!errors[fieldName]) {
+      errors[fieldName] = issue.message;
+    }
+  }
+
+  return errors;
+}
+
+const ProductField: React.FC<ProductFieldProps> = ({
+  id,
+  label,
+  value,
+  onChange,
+  error,
+  required = false,
+  type = 'text',
+  step,
+  placeholder,
+  multiline = false,
+  rows,
+}) => {
+  const errorId = `${id}-error`;
+  const fieldClassName = error
+    ? 'border-destructive focus-visible:ring-destructive'
+    : '';
+  const accessibilityProps = {
+    'aria-invalid': Boolean(error),
+    'aria-describedby': error ? errorId : undefined,
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <label htmlFor={id} className="text-xs font-medium text-foreground">
+        {label} {required && <span className="text-destructive">*</span>}
+      </label>
+      {multiline ? (
+        <Textarea
+          id={id}
+          rows={rows}
+          placeholder={placeholder}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className={fieldClassName}
+          {...accessibilityProps}
+        />
+      ) : (
+        <Input
+          id={id}
+          type={type}
+          step={step}
+          placeholder={placeholder}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className={fieldClassName}
+          {...accessibilityProps}
+        />
+      )}
+      {error && (
+        <p id={errorId} className="text-xs text-destructive">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+};
+
+const ProductForm: React.FC<ProductFormProps> = ({
   initialData,
+  onSubmit,
+  onClose,
   isSubmitting,
 }) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
-  const [stock, setStock] = useState('0');
-  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+  const [name, setName] = useState(initialData?.name ?? '');
+  const [description, setDescription] = useState(initialData?.description ?? '');
+  const [price, setPrice] = useState(initialData ? String(initialData.price) : '');
+  const [stock, setStock] = useState(String(initialData?.stock ?? 0));
+  const [fieldErrors, setFieldErrors] = useState<ProductFieldErrors>({});
   const [apiError, setApiError] = useState<string | null>(null);
 
   const isEdit = Boolean(initialData);
 
-  useEffect(() => {
-    if (initialData) {
-      setName(initialData.name);
-      setDescription(initialData.description || '');
-      setPrice(String(initialData.price));
-      setStock(String(initialData.stock ?? 0));
-    } else {
-      setName('');
-      setDescription('');
-      setPrice('');
-      setStock('0');
-    }
-    setFieldErrors({});
-    setApiError(null);
-  }, [initialData, isOpen]);
+  const fieldSetters = {
+    name: setName,
+    price: setPrice,
+    stock: setStock,
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleFieldChange = (field: keyof typeof fieldSetters, value: string) => {
+    fieldSetters[field](value);
+    setFieldErrors((previousErrors) =>
+      previousErrors[field] ? { ...previousErrors, [field]: '' } : previousErrors
+    );
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setFieldErrors({});
     setApiError(null);
 
-    // Frontend Zod validation
     const result = productFormSchema.safeParse({
       name,
       description: description.trim(),
@@ -61,37 +155,112 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
     });
 
     if (!result.success) {
-      const errors: { [key: string]: string } = {};
-      for (const issue of result.error.issues) {
-        const fieldName = issue.path[0]?.toString() || 'form';
-        if (!errors[fieldName]) {
-          errors[fieldName] = issue.message;
-        }
-      }
-      setFieldErrors(errors);
+      setFieldErrors(collectFieldErrors(result.error.issues));
       return;
     }
 
     try {
-      await onSubmit({
-        name: result.data.name,
-        description: result.data.description,
-        price: result.data.price,
-        stock: result.data.stock,
-      });
+      await onSubmit(result.data);
       onClose();
-    } catch (err: any) {
-      setApiError(err.message || 'An error occurred while saving the product');
+    } catch (error) {
+      setApiError(
+        getErrorMessage(error, 'An error occurred while saving the product')
+      );
     }
   };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+      {apiError && (
+        <div
+          role="alert"
+          className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive"
+        >
+          {apiError}
+        </div>
+      )}
+
+      <ProductField
+        id="product-name"
+        label="Product Name"
+        required
+        placeholder="e.g. Ergonomic Mechanical Keyboard"
+        value={name}
+        onChange={(value) => handleFieldChange('name', value)}
+        error={fieldErrors.name}
+      />
+
+      <ProductField
+        id="product-description"
+        label="Description"
+        placeholder="Key features, specifications, and warranty information..."
+        value={description}
+        onChange={setDescription}
+        multiline
+        rows={3}
+      />
+
+      <div className="grid grid-cols-2 gap-4">
+        <ProductField
+          id="product-price"
+          label="Price ($)"
+          required
+          type="number"
+          step="0.01"
+          placeholder="99.99"
+          value={price}
+          onChange={(value) => handleFieldChange('price', value)}
+          error={fieldErrors.price}
+        />
+
+        <ProductField
+          id="product-stock"
+          label="Stock Quantity"
+          required
+          type="number"
+          step="1"
+          placeholder="25"
+          value={stock}
+          onChange={(value) => handleFieldChange('stock', value)}
+          error={fieldErrors.stock}
+        />
+      </div>
+
+      <div className="flex items-center justify-end space-x-2 pt-4 border-t">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onClose}
+          disabled={isSubmitting}
+        >
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="w-4 h-4 animate-spin mr-1.5" />}
+          <span>{isEdit ? 'Save Changes' : 'Create Product'}</span>
+        </Button>
+      </div>
+    </form>
+  );
+};
+
+export const BottomSheet: React.FC<BottomSheetProps> = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData,
+  isSubmitting,
+}) => {
+  const isEdit = Boolean(initialData);
 
   return (
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
-          {/* Backdrop with 300ms smooth fade in/out */}
-          <motion.div
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+          <m.button
+            type="button"
+            aria-label="Close product form"
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs cursor-default"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -99,21 +268,24 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             onClick={onClose}
           />
 
-          {/* Bottom Sheet Modal with 350ms slide up */}
-          <motion.div
+          <m.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="product-sheet-title"
             className="relative z-50 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-t-2xl border-t bg-background shadow-2xl p-6 pb-8"
             initial={{ y: '100%', opacity: 0.5 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0.5 }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           >
-            {/* Grab handle affordance */}
             <div className="w-12 h-1.5 rounded-full bg-muted-foreground/25 mx-auto mb-4" />
 
-            {/* Header */}
             <div className="flex items-start justify-between pb-4 border-b">
               <div>
-                <h2 className="text-lg font-semibold tracking-tight text-foreground">
+                <h2
+                  id="product-sheet-title"
+                  className="text-lg font-semibold tracking-tight text-foreground"
+                >
                   {isEdit ? 'Edit Product' : 'Add New Product'}
                 </h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -133,113 +305,14 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
               </button>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-              {apiError && (
-                <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
-                  {apiError}
-                </div>
-              )}
-
-              {/* Name field */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-foreground">
-                  Product Name <span className="text-destructive">*</span>
-                </label>
-                <Input
-                  type="text"
-                  placeholder="e.g. Ergonomic Mechanical Keyboard"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    if (fieldErrors.name) {
-                      setFieldErrors((prev) => ({ ...prev, name: '' }));
-                    }
-                  }}
-                  className={fieldErrors.name ? 'border-destructive focus-visible:ring-destructive' : ''}
-                />
-                {fieldErrors.name && (
-                  <p className="text-xs text-destructive">{fieldErrors.name}</p>
-                )}
-              </div>
-
-              {/* Description field */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-foreground">
-                  Description
-                </label>
-                <Textarea
-                  rows={3}
-                  placeholder="Key features, specifications, and warranty information..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
-
-              {/* Price & Stock fields */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-foreground">
-                    Price ($) <span className="text-destructive">*</span>
-                  </label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="99.99"
-                    value={price}
-                    onChange={(e) => {
-                      setPrice(e.target.value);
-                      if (fieldErrors.price) {
-                        setFieldErrors((prev) => ({ ...prev, price: '' }));
-                      }
-                    }}
-                    className={fieldErrors.price ? 'border-destructive focus-visible:ring-destructive' : ''}
-                  />
-                  {fieldErrors.price && (
-                    <p className="text-xs text-destructive">{fieldErrors.price}</p>
-                  )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-foreground">
-                    Stock Quantity <span className="text-destructive">*</span>
-                  </label>
-                  <Input
-                    type="number"
-                    step="1"
-                    placeholder="25"
-                    value={stock}
-                    onChange={(e) => {
-                      setStock(e.target.value);
-                      if (fieldErrors.stock) {
-                        setFieldErrors((prev) => ({ ...prev, stock: '' }));
-                      }
-                    }}
-                    className={fieldErrors.stock ? 'border-destructive focus-visible:ring-destructive' : ''}
-                  />
-                  {fieldErrors.stock && (
-                    <p className="text-xs text-destructive">{fieldErrors.stock}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center justify-end space-x-2 pt-4 border-t">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="w-4 h-4 animate-spin mr-1.5" />}
-                  <span>{isEdit ? 'Save Changes' : 'Create Product'}</span>
-                </Button>
-              </div>
-            </form>
-          </motion.div>
+            <ProductForm
+              key={initialData?.id ?? 'new'}
+              initialData={initialData}
+              onSubmit={onSubmit}
+              onClose={onClose}
+              isSubmitting={isSubmitting}
+            />
+          </m.div>
         </div>
       )}
     </AnimatePresence>

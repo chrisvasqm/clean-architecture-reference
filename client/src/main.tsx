@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { LazyMotion, MotionConfig, domAnimation } from 'motion/react';
 import { App } from './App.js';
 import './index.css';
 
@@ -18,7 +19,11 @@ const queryClient = new QueryClient({
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <LazyMotion features={domAnimation}>
+        <MotionConfig reducedMotion="user">
+          <App />
+        </MotionConfig>
+      </LazyMotion>
     </QueryClientProvider>
   </React.StrictMode>
 );

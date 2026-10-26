@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useEffect, useState } from 'react';
+import { m, AnimatePresence } from 'motion/react';
 import { CheckCircle2, AlertCircle, X } from 'lucide-react';
 import { Navbar } from './components/Navbar.js';
 import { ProductDatatable } from './components/ProductDatatable.js';
@@ -10,7 +10,9 @@ import {
   useUpdateProduct,
   useDeleteProduct,
 } from './hooks/useProducts.js';
-import { CreateProductDTO, Product, UpdateProductDTO } from './types.js';
+import { Product } from './types.js';
+import { ProductFormValues } from './schemas/product.schema.js';
+import { getErrorMessage } from './lib/utils.js';
 
 export const App: React.FC = () => {
   // Bottom sheet state (Create or Edit)
@@ -19,7 +21,6 @@ export const App: React.FC = () => {
 
   // Selected checkboxes for bulk deletion
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   // Notification toast
   const [notification, setNotification] = useState<{
@@ -33,11 +34,15 @@ export const App: React.FC = () => {
   const updateMutation = useUpdateProduct();
   const deleteMutation = useDeleteProduct();
 
+  useEffect(() => {
+    if (!notification) return;
+
+    const timeout = setTimeout(() => setNotification(null), 3500);
+    return () => clearTimeout(timeout);
+  }, [notification]);
+
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
-    setTimeout(() => {
-      setNotification((curr) => (curr?.message === message ? null : curr));
-    }, 3500);
   };
 
   const handleOpenNew = () => {
@@ -50,7 +55,7 @@ export const App: React.FC = () => {
     setIsSheetOpen(true);
   };
 
-  const handleSheetSubmit = async (formData: CreateProductDTO | UpdateProductDTO) => {
+  const handleSheetSubmit = async (formData: ProductFormValues) => {
     if (editingProduct) {
       await updateMutation.mutateAsync({
         id: editingProduct.id,
@@ -58,7 +63,7 @@ export const App: React.FC = () => {
       });
       showNotification('success', `"${formData.name}" updated successfully`);
     } else {
-      await createMutation.mutateAsync(formData as CreateProductDTO);
+      await createMutation.mutateAsync(formData);
       showNotification('success', `"${formData.name}" added successfully`);
     }
   };
@@ -66,25 +71,38 @@ export const App: React.FC = () => {
   const handleDeleteSingle = async (product: Product) => {
     if (!window.confirm(`Delete "${product.name}"?`)) return;
     try {
-      await deleteMutation.mutateAsync(product.id);
-      setSelectedIds((prev) => prev.filter((id) => id !== product.id));
+      const [result] = await deleteMutation.mutateAsync([product.id]);
+      if (result.status === 'rejected') {
+        throw result.reason;
+      }
+      setSelectedIds((previousIds) => previousIds.filter((id) => id !== product.id));
       showNotification('success', `"${product.name}" deleted`);
-    } catch (err: any) {
-      showNotification('error', err.message || 'Failed to delete product');
+    } catch (error) {
+      showNotification('error', getErrorMessage(error, 'Failed to delete product'));
     }
   };
 
   const handleToggleSelect = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+    setSelectedIds((previousIds) => {
+      const selectedIdSet = new Set(previousIds);
+      if (selectedIdSet.has(id)) {
+        selectedIdSet.delete(id);
+      } else {
+        selectedIdSet.add(id);
+      }
+      return Array.from(selectedIdSet);
+    });
   };
 
   const handleToggleSelectAll = (ids: string[]) => {
     setSelectedIds((previousIds) => {
-      const allSelected = ids.length > 0 && ids.every((id) => previousIds.includes(id));
+      const previousIdSet = new Set(previousIds);
+      const targetIdSet = new Set(ids);
+      const allSelected =
+        ids.length > 0 && ids.every((id) => previousIdSet.has(id));
+
       if (allSelected) {
-        return previousIds.filter((id) => !ids.includes(id));
+        return previousIds.filter((id) => !targetIdSet.has(id));
       }
       return Array.from(new Set([...previousIds, ...ids]));
     });
@@ -100,18 +118,30 @@ export const App: React.FC = () => {
       return;
     }
 
-    setIsBulkDeleting(true);
     try {
-      await Promise.all(selectedIds.map((id) => deleteMutation.mutateAsync(id)));
-      showNotification(
-        'success',
-        `Successfully deleted ${selectedIds.length} item(s)`
+      const results = await deleteMutation.mutateAsync(selectedIds);
+      const succeededIds = selectedIds.filter(
+        (_id, index) => results[index]?.status === 'fulfilled'
       );
-      setSelectedIds([]);
-    } catch (err: any) {
-      showNotification('error', err.message || 'Failed to complete deletion');
-    } finally {
-      setIsBulkDeleting(false);
+      const failedCount = results.length - succeededIds.length;
+      const succeededIdSet = new Set(succeededIds);
+
+      setSelectedIds((previousIds) =>
+        previousIds.filter((id) => !succeededIdSet.has(id))
+      );
+
+      if (failedCount === 0) {
+        showNotification('success', `Successfully deleted ${succeededIds.length} item(s)`);
+      } else if (succeededIds.length === 0) {
+        showNotification('error', 'Failed to delete the selected items');
+      } else {
+        showNotification(
+          'error',
+          `Deleted ${succeededIds.length} item(s); ${failedCount} failed`
+        );
+      }
+    } catch (error) {
+      showNotification('error', getErrorMessage(error, 'Failed to complete deletion'));
     }
   };
 
@@ -121,7 +151,7 @@ export const App: React.FC = () => {
       <Navbar onOpenNew={handleOpenNew} productCount={data?.count} />
 
       {/* Main Content Area with 350ms smooth fade in */}
-      <motion.main
+      <m.main
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: 'easeOut' }}
@@ -130,7 +160,7 @@ export const App: React.FC = () => {
         {/* Toast Notification with 300ms motion */}
         <AnimatePresence>
           {notification && (
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
@@ -150,12 +180,14 @@ export const App: React.FC = () => {
                 <span>{notification.message}</span>
               </div>
               <button
+                type="button"
                 onClick={() => setNotification(null)}
+                aria-label="Dismiss notification"
                 className="text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
 
@@ -164,17 +196,17 @@ export const App: React.FC = () => {
           products={data?.products ?? []}
           isLoading={isLoading}
           isError={isError}
-          error={error as Error}
+          error={error}
           selectedIds={selectedIds}
           onToggleSelect={handleToggleSelect}
           onToggleSelectAll={handleToggleSelectAll}
           onBulkDelete={handleBulkDelete}
-          isBulkDeleting={isBulkDeleting}
+          isBulkDeleting={deleteMutation.isPending}
           onEdit={handleOpenEdit}
           onDelete={handleDeleteSingle}
           onNew={handleOpenNew}
         />
-      </motion.main>
+      </m.main>
 
       {/* 3. Bottom Sheet Modal for Product Form (Create / Edit) */}
       <BottomSheet

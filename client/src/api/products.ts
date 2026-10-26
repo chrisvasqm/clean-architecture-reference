@@ -1,72 +1,60 @@
-import { ApiResponse, CreateProductDTO, Product, UpdateProductDTO } from '../types.js';
+import {
+  ApiErrorResponse,
+  ApiResponse,
+  CreateProductDTO,
+  Product,
+  UpdateProductDTO,
+} from '../types.js';
 
 const API_BASE = '/api/products';
 
-async function handleResponse<T>(response: Response): Promise<T> {
-  const data = await response.json().catch(() => null);
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, init);
+
   if (!response.ok) {
-    const errorMsg = data?.message || data?.error || `HTTP error ${response.status}`;
-    throw new Error(errorMsg);
+    const errorPayload = (await response.json().catch(() => null)) as
+      | ApiErrorResponse
+      | null;
+    throw new Error(errorPayload?.message ?? `HTTP error ${response.status}`);
   }
-  return data as T;
+
+  return (await response.json()) as T;
 }
 
 export const productApi = {
   // GET /api/products - List all products
   async list(): Promise<{ products: Product[]; count: number }> {
-    const res = await fetch(API_BASE);
-    const body = await handleResponse<ApiResponse<Product[]>>(res);
+    const payload = await request<ApiResponse<Product[]>>('');
     return {
-      products: body.data,
-      count: body.count ?? body.data.length,
+      products: payload.data,
+      count: payload.count ?? payload.data.length,
     };
-  },
-
-  // GET /api/products/:id - Get product by ID
-  async getById(id: string): Promise<Product> {
-    const res = await fetch(`${API_BASE}/${encodeURIComponent(id)}`);
-    const body = await handleResponse<ApiResponse<Product>>(res);
-    return body.data;
   },
 
   // POST /api/products - Create a product
   async create(payload: CreateProductDTO): Promise<Product> {
-    const res = await fetch(API_BASE, {
+    const response = await request<ApiResponse<Product>>('', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    const body = await handleResponse<ApiResponse<Product>>(res);
-    return body.data;
+    return response.data;
   },
 
-  // PUT /api/products/:id - Full/standard update
+  // PUT /api/products/:id - Replace a product
   async update(id: string, payload: UpdateProductDTO): Promise<Product> {
-    const res = await fetch(`${API_BASE}/${encodeURIComponent(id)}`, {
+    const response = await request<ApiResponse<Product>>(`/${encodeURIComponent(id)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    const body = await handleResponse<ApiResponse<Product>>(res);
-    return body.data;
+    return response.data;
   },
 
-  // PATCH /api/products/:id - Partial update
-  async patch(id: string, payload: UpdateProductDTO): Promise<Product> {
-    const res = await fetch(`${API_BASE}/${encodeURIComponent(id)}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const body = await handleResponse<ApiResponse<Product>>(res);
-    return body.data;
-  },
-
-  // DELETE /api/products/:id - Delete product
+  // DELETE /api/products/:id - Delete a product
   async delete(id: string): Promise<{ message: string }> {
-    const res = await fetch(`${API_BASE}/${encodeURIComponent(id)}`, {
+    return request<{ message: string }>(`/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     });
-    return handleResponse<{ message: string }>(res);
   },
 };

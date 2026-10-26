@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { m, AnimatePresence } from 'motion/react';
 import { Pencil, Trash2, PackageX, AlertCircle, Loader2, Search, X, Plus } from 'lucide-react';
 import { Product } from '../types.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table.js';
@@ -7,6 +7,23 @@ import { Badge } from './ui/badge.js';
 import { Button } from './ui/button.js';
 import { Card } from './ui/card.js';
 import { Input } from './ui/input.js';
+import {
+  LOW_STOCK_THRESHOLD,
+  StockStatus,
+  getStockStatus,
+} from '../lib/utils.js';
+
+const stockStatusBadgeVariants = {
+  out_of_stock: 'destructive',
+  low_stock: 'warning',
+  in_stock: 'success',
+} as const;
+
+const stockStatusLabels = {
+  out_of_stock: 'Out of Stock',
+  low_stock: 'Low Stock',
+  in_stock: 'In Stock',
+} as const;
 
 interface ProductDatatableProps {
   products: Product[];
@@ -38,26 +55,27 @@ export const ProductDatatable: React.FC<ProductDatatableProps> = ({
   onNew,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [stockFilter, setStockFilter] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all');
+  const [stockFilter, setStockFilter] = useState<'all' | StockStatus>('all');
 
   const filteredProducts = useMemo(() => {
+    const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+
     return products.filter((product) => {
       const matchesSearch =
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description?.toLowerCase().includes(searchTerm.toLowerCase());
+        product.name.toLowerCase().includes(normalizedSearchTerm) ||
+        (product.description?.toLowerCase().includes(normalizedSearchTerm) ?? false);
 
       if (!matchesSearch) return false;
 
-      if (stockFilter === 'out_of_stock') return product.stock === 0;
-      if (stockFilter === 'low_stock') return product.stock > 0 && product.stock <= 10;
-      if (stockFilter === 'in_stock') return product.stock > 10;
-      return true;
+      return stockFilter === 'all' || getStockStatus(product.stock) === stockFilter;
     });
   }, [products, searchTerm, stockFilter]);
 
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+
   const selectedVisibleCount = useMemo(
-    () => filteredProducts.filter((product) => selectedIds.includes(product.id)).length,
-    [filteredProducts, selectedIds]
+    () => filteredProducts.filter((product) => selectedIdSet.has(product.id)).length,
+    [filteredProducts, selectedIdSet]
   );
 
   const isAllSelected =
@@ -100,13 +118,16 @@ export const ProductDatatable: React.FC<ProductDatatableProps> = ({
           <Input
             type="text"
             placeholder="Search products..."
+            aria-label="Search products"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(event) => setSearchTerm(event.target.value)}
             className="pl-9 pr-8 h-9 text-xs"
           />
           {searchTerm && (
             <button
+              type="button"
               onClick={() => setSearchTerm('')}
+              aria-label="Clear search"
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
@@ -115,20 +136,22 @@ export const ProductDatatable: React.FC<ProductDatatableProps> = ({
         </div>
 
         <div className="flex items-center space-x-1 overflow-x-auto pb-1 sm:pb-0">
-          {(['all', 'in_stock', 'low_stock', 'out_of_stock'] as const).map((filter) => (
+          {(['all', 'in_stock', 'low_stock', 'out_of_stock'] as const).map((statusOption) => (
             <button
-              key={filter}
-              onClick={() => setStockFilter(filter)}
+              key={statusOption}
+              type="button"
+              aria-pressed={stockFilter === statusOption}
+              onClick={() => setStockFilter(statusOption)}
               className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors cursor-pointer whitespace-nowrap ${
-                stockFilter === filter
+                stockFilter === statusOption
                   ? 'bg-secondary text-secondary-foreground shadow-xs'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
               }`}
             >
-              {filter === 'all' && 'All'}
-              {filter === 'in_stock' && 'In Stock'}
-              {filter === 'low_stock' && 'Low Stock (≤10)'}
-              {filter === 'out_of_stock' && 'Out of Stock'}
+              {statusOption === 'all' && 'All'}
+              {statusOption === 'in_stock' && 'In Stock'}
+              {statusOption === 'low_stock' && `Low Stock (≤${LOW_STOCK_THRESHOLD})`}
+              {statusOption === 'out_of_stock' && 'Out of Stock'}
             </button>
           ))}
         </div>
@@ -137,10 +160,10 @@ export const ProductDatatable: React.FC<ProductDatatableProps> = ({
       {/* Bulk Action Bar with smooth motion */}
       <AnimatePresence>
         {selectedIds.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -6, height: 0 }}
-            animate={{ opacity: 1, y: 0, height: 'auto' }}
-            exit={{ opacity: 0, y: -6, height: 0 }}
+          <m.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
             className="overflow-hidden"
           >
@@ -164,14 +187,14 @@ export const ProductDatatable: React.FC<ProductDatatableProps> = ({
                 <span>Delete Selected</span>
               </Button>
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
 
       {/* Main Datatable */}
       <Card className="overflow-hidden shadow-xs border">
         {filteredProducts.length === 0 ? (
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.35, ease: 'easeOut' }}
@@ -190,7 +213,7 @@ export const ProductDatatable: React.FC<ProductDatatableProps> = ({
                 <span>Add Product</span>
               </Button>
             )}
-          </motion.div>
+          </m.div>
         ) : (
           <Table>
             <TableHeader>
@@ -199,8 +222,10 @@ export const ProductDatatable: React.FC<ProductDatatableProps> = ({
                   <input
                     type="checkbox"
                     checked={isAllSelected}
-                    ref={(el) => {
-                      if (el) el.indeterminate = isPartiallySelected;
+                    ref={(checkboxElement) => {
+                      if (checkboxElement) {
+                        checkboxElement.indeterminate = isPartiallySelected;
+                      }
                     }}
                     onChange={() => onToggleSelectAll(filteredProducts.map((product) => product.id))}
                     className="h-4 w-4 rounded border-input accent-primary cursor-pointer align-middle"
@@ -216,12 +241,11 @@ export const ProductDatatable: React.FC<ProductDatatableProps> = ({
             </TableHeader>
             <TableBody>
               {filteredProducts.map((product, index) => {
-                const isSelected = selectedIds.includes(product.id);
-                const isOut = product.stock === 0;
-                const isLow = product.stock > 0 && product.stock <= 10;
+                const isSelected = selectedIdSet.has(product.id);
+                const stockStatus = getStockStatus(product.stock);
 
                 return (
-                  <motion.tr
+                  <m.tr
                     key={product.id}
                     initial={{ opacity: 0, y: 3 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -263,10 +287,10 @@ export const ProductDatatable: React.FC<ProductDatatableProps> = ({
 
                     <TableCell>
                       <Badge
-                        variant={isOut ? 'destructive' : isLow ? 'warning' : 'success'}
+                        variant={stockStatusBadgeVariants[stockStatus]}
                         className="text-xs font-normal"
                       >
-                        {isOut ? 'Out of Stock' : isLow ? 'Low Stock' : 'In Stock'}
+                        {stockStatusLabels[stockStatus]}
                       </Badge>
                     </TableCell>
 
@@ -292,7 +316,7 @@ export const ProductDatatable: React.FC<ProductDatatableProps> = ({
                         </Button>
                       </div>
                     </TableCell>
-                  </motion.tr>
+                  </m.tr>
                 );
               })}
             </TableBody>
