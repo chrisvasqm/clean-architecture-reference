@@ -90,7 +90,7 @@ The system strictly adheres to the **Dependency Rule**: *dependencies only point
    - Implements domain repository interfaces (`InMemoryProductRepository`).
    - Can easily be swapped out for PostgreSQL, SQLite, Prisma, or MongoDB without changing any business logic.
 4. **Presentation Layer (`src/presentation/`)**
-   - HTTP transport using Express (`ProductController`, `createProductRouter`).
+   - HTTP transport using Express single-action controllers (`CreateProductController`, `GetProductController`, etc.) and `createProductRouter`.
    - Centralized error handler mapping domain errors (`NotFoundError`, `ValidationError`, `ConflictError`) to appropriate HTTP status codes (404, 400, 409).
 5. **Composition Root (`src/index.ts`)**
    - Manual, lightweight dependency injection (constructor injection). No reflection or bulky DI containers needed.
