@@ -1,4 +1,4 @@
-import { describe, it } from 'vitest';
+import { beforeEach, describe, it } from 'vitest';
 import { It, Mock, Times } from 'moq.ts';
 import { Request, Response } from 'express';
 import { CreateProductController } from '../../src/presentation/controllers/create-product.controller.js';
@@ -6,61 +6,50 @@ import { CreateProductUseCase } from '../../src/application/use-cases/create-pro
 import { CreateProductDTO, Product } from '../../src/domain/entities/product.entity.js';
 
 describe('CreateProductController', () => {
+  const payload: CreateProductDTO = {
+    name: 'Mechanical Keyboard',
+    description: 'RGB Backlit',
+    price: 129.99,
+    stock: 20,
+  };
+
+  const createdProduct: Product = {
+    id: 'prod-new',
+    ...payload,
+    description: payload.description ?? '',
+    stock: payload.stock ?? 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  let useCaseMock: Mock<CreateProductUseCase>;
+  let resMock: Mock<Response>;
+  let controller: CreateProductController;
+
+  beforeEach(() => {
+    useCaseMock = new Mock<CreateProductUseCase>();
+    resMock = new Mock<Response>();
+    resMock.setup((r) => r.status(201)).returns(resMock.object());
+    resMock.setup((r) => r.json(It.IsAny())).returns(resMock.object());
+    controller = new CreateProductController(useCaseMock.object());
+  });
+
   it('should return 201 with created product and success message', async () => {
-    const payload: CreateProductDTO = {
-      name: 'Mechanical Keyboard',
-      description: 'RGB Backlit',
-      price: 129.99,
-      stock: 20,
-    };
+    // Arrange
+    useCaseMock.setup((u) => u.execute(It.IsAny())).returns(Promise.resolve(createdProduct));
 
-    const createdProduct: Product = {
-      id: 'prod-new',
-      ...payload,
-      description: payload.description ?? '',
-      stock: payload.stock ?? 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    // Act
+    await controller.handle({ body: payload } as Request, resMock.object());
 
-    const useCaseMock = new Mock<CreateProductUseCase>()
-      .setup((instance) =>
-        instance.execute(
-          It.Is(
-            (dto: CreateProductDTO) =>
-              dto.name === payload.name &&
-              dto.description === payload.description &&
-              dto.price === payload.price &&
-              dto.stock === payload.stock
-          )
-        )
-      )
-      .returns(Promise.resolve(createdProduct));
-
-    const reqMock = new Mock<Request>()
-      .setup((instance) => instance.body)
-      .returns(payload);
-
-    const resMock = new Mock<Response>();
-    resMock.setup((instance) => instance.status(201)).returns(resMock.object());
-    resMock.setup((instance) => instance.json(It.IsAny())).returns(resMock.object());
-
-    const controller = new CreateProductController(useCaseMock.object());
-
-    await controller.handle(reqMock.object(), resMock.object());
-
-    useCaseMock.verify(
-      (instance) => instance.execute(It.IsAny()),
-      Times.Once()
-    );
-    resMock.verify((instance) => instance.status(201), Times.Once());
+    // Assert
+    resMock.verify((r) => r.status(201), Times.Once());
     resMock.verify(
-      (instance) =>
-        instance.json(
+      (r) =>
+        r.json(
           It.Is(
-            (body: any) =>
-              body.data === createdProduct &&
-              body.message === 'Product created successfully'
+            (b: any) =>
+              b.data === createdProduct &&
+              b.message === 'Product created successfully'
           )
         ),
       Times.Once()

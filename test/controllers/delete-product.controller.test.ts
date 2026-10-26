@@ -1,35 +1,40 @@
-import { describe, it } from 'vitest';
+import { beforeEach, describe, it } from 'vitest';
 import { It, Mock, Times } from 'moq.ts';
 import { Request, Response } from 'express';
 import { DeleteProductController } from '../../src/presentation/controllers/delete-product.controller.js';
 import { DeleteProductUseCase } from '../../src/application/use-cases/delete-product.use-case.js';
 
 describe('DeleteProductController', () => {
+  let useCaseMock: Mock<DeleteProductUseCase>;
+  let resMock: Mock<Response>;
+  let controller: DeleteProductController;
+
+  beforeEach(() => {
+    useCaseMock = new Mock<DeleteProductUseCase>();
+    resMock = new Mock<Response>();
+    resMock.setup((r) => r.status(200)).returns(resMock.object());
+    resMock.setup((r) => r.json(It.IsAny())).returns(resMock.object());
+    controller = new DeleteProductController(useCaseMock.object());
+  });
+
   it('should return 200 with deletion message when successfully deleted', async () => {
-    const useCaseMock = new Mock<DeleteProductUseCase>()
-      .setup((instance) => instance.execute('prod-delete-id'))
-      .returns(Promise.resolve());
+    // Arrange
+    useCaseMock.setup((u) => u.execute('prod-delete-id')).returns(Promise.resolve());
 
-    const reqMock = new Mock<Request<{ id: string }>>()
-      .setup((instance) => instance.params)
-      .returns({ id: 'prod-delete-id' });
+    // Act
+    await controller.handle(
+      { params: { id: 'prod-delete-id' } } as Request<{ id: string }>,
+      resMock.object()
+    );
 
-    const resMock = new Mock<Response>();
-    resMock.setup((instance) => instance.status(200)).returns(resMock.object());
-    resMock.setup((instance) => instance.json(It.IsAny())).returns(resMock.object());
-
-    const controller = new DeleteProductController(useCaseMock.object());
-
-    await controller.handle(reqMock.object(), resMock.object());
-
-    useCaseMock.verify((instance) => instance.execute('prod-delete-id'), Times.Once());
-    resMock.verify((instance) => instance.status(200), Times.Once());
+    // Assert
+    resMock.verify((r) => r.status(200), Times.Once());
     resMock.verify(
-      (instance) =>
-        instance.json(
+      (r) =>
+        r.json(
           It.Is(
-            (body: any) =>
-              body.message === 'Product with id "prod-delete-id" was deleted successfully'
+            (b: any) =>
+              b.message === 'Product with id "prod-delete-id" was deleted successfully'
           )
         ),
       Times.Once()
