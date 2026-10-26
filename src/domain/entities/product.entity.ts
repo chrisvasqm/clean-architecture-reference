@@ -25,41 +25,41 @@ export interface UpdateProductDTO {
 }
 
 export class ProductEntity {
-  static validate(props: Partial<Product>): void {
-    if (props.name !== undefined && props.name.trim().length < 2) {
+  static validate(properties: Partial<Product>): void {
+    if (properties.name !== undefined && properties.name.trim().length < 2) {
       throw new ValidationError('Product name must be at least 2 characters long.');
     }
 
     if (
-      props.price !== undefined &&
-      (typeof props.price !== 'number' || Number.isNaN(props.price) || props.price < 0)
+      properties.price !== undefined &&
+      (typeof properties.price !== 'number' || Number.isNaN(properties.price) || properties.price < 0)
     ) {
       throw new ValidationError('Product price must be a non-negative number.');
     }
 
     if (
-      props.stock !== undefined &&
-      (typeof props.stock !== 'number' || !Number.isInteger(props.stock) || props.stock < 0)
+      properties.stock !== undefined &&
+      (typeof properties.stock !== 'number' || !Number.isInteger(properties.stock) || properties.stock < 0)
     ) {
       throw new ValidationError('Product stock must be a non-negative integer.');
     }
   }
 
-  static create(id: string, dto: CreateProductDTO): Product {
-    if (!dto.name) {
+  static create(id: string, dataTransferObject: CreateProductDTO): Product {
+    if (!dataTransferObject.name) {
       throw new ValidationError('Product name is required.');
     }
-    if (dto.price == null) {
+    if (dataTransferObject.price == null) {
       throw new ValidationError('Product price is required.');
     }
 
     const now = new Date();
     const product: Product = {
       id,
-      name: dto.name.trim(),
-      description: dto.description?.trim() ?? '',
-      price: dto.price,
-      stock: dto.stock ?? 0,
+      name: dataTransferObject.name.trim(),
+      description: dataTransferObject.description?.trim() ?? '',
+      price: dataTransferObject.price,
+      stock: dataTransferObject.stock ?? 0,
       createdAt: now,
       updatedAt: now,
     };

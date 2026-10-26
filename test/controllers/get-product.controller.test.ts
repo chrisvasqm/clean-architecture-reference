@@ -17,26 +17,26 @@ describe('GetProductController', () => {
   };
 
   let useCaseMock: Mock<GetProductUseCase>;
-  let resMock: Mock<Response>;
+  let responseMock: Mock<Response>;
   let controller: GetProductController;
 
   beforeEach(() => {
     useCaseMock = new Mock<GetProductUseCase>();
-    resMock = new Mock<Response>();
-    resMock.setup((r) => r.status(200)).returns(resMock.object());
-    resMock.setup((r) => r.json(It.IsAny())).returns(resMock.object());
+    responseMock = new Mock<Response>();
+    responseMock.setup((response) => response.status(200)).returns(responseMock.object());
+    responseMock.setup((response) => response.json(It.IsAny())).returns(responseMock.object());
     controller = new GetProductController(useCaseMock.object());
   });
 
   it('should return 200 with the product when found', async () => {
     // Arrange
-    useCaseMock.setup((u) => u.execute('prod-123')).returns(Promise.resolve(mockProduct));
+    useCaseMock.setup((useCase) => useCase.execute('prod-123')).returns(Promise.resolve(mockProduct));
 
     // Act
-    await controller.handle({ params: { id: 'prod-123' } } as Request<{ id: string }>, resMock.object());
+    await controller.handle({ params: { id: 'prod-123' } } as Request<{ id: string }>, responseMock.object());
 
     // Assert
-    resMock.verify((r) => r.status(200), Times.Once());
-    resMock.verify((r) => r.json(It.Is((b: any) => b.data === mockProduct)), Times.Once());
+    responseMock.verify((response) => response.status(200), Times.Once());
+    responseMock.verify((response) => response.json(It.Is((body: any) => body.data === mockProduct)), Times.Once());
   });
 });

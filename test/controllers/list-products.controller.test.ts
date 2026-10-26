@@ -19,26 +19,35 @@ describe('ListProductsController', () => {
   ];
 
   let useCaseMock: Mock<ListProductsUseCase>;
-  let resMock: Mock<Response>;
+  let responseMock: Mock<Response>;
   let controller: ListProductsController;
 
   beforeEach(() => {
     useCaseMock = new Mock<ListProductsUseCase>();
-    resMock = new Mock<Response>();
-    resMock.setup((r) => r.status(200)).returns(resMock.object());
-    resMock.setup((r) => r.json(It.IsAny())).returns(resMock.object());
+    responseMock = new Mock<Response>();
+    responseMock.setup((response) => response.status(200)).returns(responseMock.object());
+    responseMock.setup((response) => response.json(It.IsAny())).returns(responseMock.object());
     controller = new ListProductsController(useCaseMock.object());
   });
 
   it('should return 200 with all products and count', async () => {
     // Arrange
-    useCaseMock.setup((u) => u.execute()).returns(Promise.resolve(mockProducts));
+    useCaseMock.setup((useCase) => useCase.execute()).returns(Promise.resolve(mockProducts));
 
     // Act
-    await controller.handle({} as Request, resMock.object());
+    await controller.handle({} as Request, responseMock.object());
 
     // Assert
-    resMock.verify((r) => r.status(200), Times.Once());
-    resMock.verify((r) => r.json(It.Is((b: any) => b.data === mockProducts && b.count === 1)), Times.Once());
+    responseMock.verify((response) => response.status(200), Times.Once());
+    responseMock.verify(
+      (response) =>
+        response.json(
+          It.Is(
+            (body: any) =>
+              body.data === mockProducts && body.count === 1
+          )
+        ),
+      Times.Once()
+    );
   });
 });

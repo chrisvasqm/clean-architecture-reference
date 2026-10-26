@@ -23,33 +23,33 @@ describe('CreateProductController', () => {
   };
 
   let useCaseMock: Mock<CreateProductUseCase>;
-  let resMock: Mock<Response>;
+  let responseMock: Mock<Response>;
   let controller: CreateProductController;
 
   beforeEach(() => {
     useCaseMock = new Mock<CreateProductUseCase>();
-    resMock = new Mock<Response>();
-    resMock.setup((r) => r.status(201)).returns(resMock.object());
-    resMock.setup((r) => r.json(It.IsAny())).returns(resMock.object());
+    responseMock = new Mock<Response>();
+    responseMock.setup((response) => response.status(201)).returns(responseMock.object());
+    responseMock.setup((response) => response.json(It.IsAny())).returns(responseMock.object());
     controller = new CreateProductController(useCaseMock.object());
   });
 
   it('should return 201 with created product and success message', async () => {
     // Arrange
-    useCaseMock.setup((u) => u.execute(It.IsAny())).returns(Promise.resolve(createdProduct));
+    useCaseMock.setup((useCase) => useCase.execute(It.IsAny())).returns(Promise.resolve(createdProduct));
 
     // Act
-    await controller.handle({ body: payload } as Request, resMock.object());
+    await controller.handle({ body: payload } as Request, responseMock.object());
 
     // Assert
-    resMock.verify((r) => r.status(201), Times.Once());
-    resMock.verify(
-      (r) =>
-        r.json(
+    responseMock.verify((response) => response.status(201), Times.Once());
+    responseMock.verify(
+      (response) =>
+        response.json(
           It.Is(
-            (b: any) =>
-              b.data === createdProduct &&
-              b.message === 'Product created successfully'
+            (body: any) =>
+              body.data === createdProduct &&
+              body.message === 'Product created successfully'
           )
         ),
       Times.Once()

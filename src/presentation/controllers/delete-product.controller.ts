@@ -4,10 +4,10 @@ import { DeleteProductUseCase } from '../../application/use-cases/delete-product
 export class DeleteProductController {
   constructor(private readonly deleteProductUseCase: DeleteProductUseCase) {}
 
-  handle = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
-    await this.deleteProductUseCase.execute(req.params.id);
-    res.status(200).json({
-      message: `Product with id "${req.params.id}" was deleted successfully`,
+  handle = async (request: Request<{ id: string }>, response: Response): Promise<void> => {
+    await this.deleteProductUseCase.execute(request.params.id);
+    response.status(200).json({
+      message: `Product with id "${request.params.id}" was deleted successfully`,
     });
   };
 }

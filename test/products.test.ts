@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { Express } from 'express';
-import { createApp } from '../src/app.js';
+import { createApplication } from '../src/app.js';
 import { CreateProductUseCase } from '../src/application/use-cases/create-product.use-case.js';
 import { DeleteProductUseCase } from '../src/application/use-cases/delete-product.use-case.js';
 import { GetProductUseCase } from '../src/application/use-cases/get-product.use-case.js';
@@ -16,7 +16,7 @@ import { UpdateProductController } from '../src/presentation/controllers/update-
 import { Product } from '../src/domain/entities/product.entity.js';
 
 describe('Products API', () => {
-  let app: Express;
+  let application: Express;
   let repository: InMemoryProductRepository;
   const initialProducts: Product[] = [
     {
@@ -48,12 +48,12 @@ describe('Products API', () => {
       update: new UpdateProductController(new UpdateProductUseCase(repository)),
       delete: new DeleteProductController(new DeleteProductUseCase(repository)),
     };
-    app = createApp(controllers);
+    application = createApplication(controllers);
   });
 
   describe('GET /health', () => {
     it('should return 200 and healthy status', async () => {
-      const response = await request(app).get('/health');
+      const response = await request(application).get('/health');
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('status', 'ok');
@@ -63,7 +63,7 @@ describe('Products API', () => {
 
   describe('GET /api/products', () => {
     it('should return all products and total count', async () => {
-      const response = await request(app).get('/api/products');
+      const response = await request(application).get('/api/products');
 
       expect(response.status).toBe(200);
       expect(response.body.data).toHaveLength(2);
@@ -81,7 +81,7 @@ describe('Products API', () => {
         stock: 15,
       };
 
-      const response = await request(app).post('/api/products').send(payload);
+      const response = await request(application).post('/api/products').send(payload);
 
       expect(response.status).toBe(201);
       expect(response.body.message).toBe('Product created successfully');
@@ -95,7 +95,7 @@ describe('Products API', () => {
     });
 
     it('should return 400 when name is missing or too short', async () => {
-      const response = await request(app).post('/api/products').send({
+      const response = await request(application).post('/api/products').send({
         name: '',
         price: 50,
       });
@@ -106,7 +106,7 @@ describe('Products API', () => {
     });
 
     it('should return 400 when price is negative', async () => {
-      const response = await request(app).post('/api/products').send({
+      const response = await request(application).post('/api/products').send({
         name: 'Monitor Stand',
         price: -10,
       });
@@ -119,7 +119,7 @@ describe('Products API', () => {
 
   describe('GET /api/products/:id', () => {
     it('should return the product when found', async () => {
-      const response = await request(app).get('/api/products/1');
+      const response = await request(application).get('/api/products/1');
 
       expect(response.status).toBe(200);
       expect(response.body.data).toMatchObject({
@@ -130,7 +130,7 @@ describe('Products API', () => {
     });
 
     it('should return 404 when product is not found', async () => {
-      const response = await request(app).get('/api/products/non-existent-id');
+      const response = await request(application).get('/api/products/non-existent-id');
 
       expect(response.status).toBe(404);
       expect(response.body.error).toBe('Not Found');
@@ -145,7 +145,7 @@ describe('Products API', () => {
         stock: 35,
       };
 
-      const response = await request(app)
+      const response = await request(application)
         .put('/api/products/1')
         .send(updatePayload);
 
@@ -157,7 +157,7 @@ describe('Products API', () => {
     });
 
     it('should return 404 when updating non-existent product', async () => {
-      const response = await request(app)
+      const response = await request(application)
         .put('/api/products/non-existent-id')
         .send({ price: 100 });
 
@@ -166,7 +166,7 @@ describe('Products API', () => {
     });
 
     it('should return 400 when updating with invalid values', async () => {
-      const response = await request(app)
+      const response = await request(application)
         .put('/api/products/1')
         .send({ price: -25 });
 
@@ -177,18 +177,18 @@ describe('Products API', () => {
 
   describe('DELETE /api/products/:id', () => {
     it('should delete the product and return 200', async () => {
-      const response = await request(app).delete('/api/products/1');
+      const response = await request(application).delete('/api/products/1');
 
       expect(response.status).toBe(200);
       expect(response.body.message).toContain('deleted successfully');
 
       // Verify it's no longer retrievable
-      const getResponse = await request(app).get('/api/products/1');
+      const getResponse = await request(application).get('/api/products/1');
       expect(getResponse.status).toBe(404);
     });
 
     it('should return 404 when deleting non-existent product', async () => {
-      const response = await request(app).delete('/api/products/non-existent-id');
+      const response = await request(application).delete('/api/products/non-existent-id');
 
       expect(response.status).toBe(404);
       expect(response.body.error).toBe('Not Found');

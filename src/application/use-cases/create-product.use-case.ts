@@ -5,9 +5,9 @@ import { IProductRepository } from '../../domain/repositories/product.repository
 export class CreateProductUseCase {
   constructor(private readonly productRepository: IProductRepository) {}
 
-  async execute(dto: CreateProductDTO): Promise<Product> {
+  async execute(dataTransferObject: CreateProductDTO): Promise<Product> {
     const id = randomUUID();
-    const product = ProductEntity.create(id, dto);
+    const product = ProductEntity.create(id, dataTransferObject);
     return this.productRepository.create(product);
   }
 }

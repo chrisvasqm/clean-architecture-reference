@@ -5,8 +5,8 @@ export class InMemoryProductRepository implements IProductRepository {
   private readonly products = new Map<string, Product>();
 
   constructor(products: Product[] = []) {
-    for (const item of products) {
-      this.products.set(item.id, { ...item });
+    for (const product of products) {
+      this.products.set(product.id, { ...product });
     }
   }
 
@@ -21,7 +21,7 @@ export class InMemoryProductRepository implements IProductRepository {
   }
 
   async findAll(): Promise<Product[]> {
-    return Array.from(this.products.values(), (p) => ({ ...p }));
+    return Array.from(this.products.values(), (product) => ({ ...product }));
   }
 
   async update(id: string, product: Product): Promise<Product> {

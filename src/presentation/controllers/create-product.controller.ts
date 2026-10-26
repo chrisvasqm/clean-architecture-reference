@@ -4,8 +4,8 @@ import { CreateProductUseCase } from '../../application/use-cases/create-product
 export class CreateProductController {
   constructor(private readonly createProductUseCase: CreateProductUseCase) {}
 
-  handle = async (req: Request, res: Response): Promise<void> => {
-    const { name, description, price, stock } = req.body;
+  handle = async (request: Request, response: Response): Promise<void> => {
+    const { name, description, price, stock } = request.body;
     const product = await this.createProductUseCase.execute({
       name,
       description,
@@ -13,7 +13,7 @@ export class CreateProductController {
       stock,
     });
 
-    res.status(201).json({
+    response.status(201).json({
       data: product,
       message: 'Product created successfully',
     });

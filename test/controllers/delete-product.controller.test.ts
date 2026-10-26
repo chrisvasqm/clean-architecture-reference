@@ -6,35 +6,35 @@ import { DeleteProductUseCase } from '../../src/application/use-cases/delete-pro
 
 describe('DeleteProductController', () => {
   let useCaseMock: Mock<DeleteProductUseCase>;
-  let resMock: Mock<Response>;
+  let responseMock: Mock<Response>;
   let controller: DeleteProductController;
 
   beforeEach(() => {
     useCaseMock = new Mock<DeleteProductUseCase>();
-    resMock = new Mock<Response>();
-    resMock.setup((r) => r.status(200)).returns(resMock.object());
-    resMock.setup((r) => r.json(It.IsAny())).returns(resMock.object());
+    responseMock = new Mock<Response>();
+    responseMock.setup((response) => response.status(200)).returns(responseMock.object());
+    responseMock.setup((response) => response.json(It.IsAny())).returns(responseMock.object());
     controller = new DeleteProductController(useCaseMock.object());
   });
 
   it('should return 200 with deletion message when successfully deleted', async () => {
     // Arrange
-    useCaseMock.setup((u) => u.execute('prod-delete-id')).returns(Promise.resolve());
+    useCaseMock.setup((useCase) => useCase.execute('prod-delete-id')).returns(Promise.resolve());
 
     // Act
     await controller.handle(
       { params: { id: 'prod-delete-id' } } as Request<{ id: string }>,
-      resMock.object()
+      responseMock.object()
     );
 
     // Assert
-    resMock.verify((r) => r.status(200), Times.Once());
-    resMock.verify(
-      (r) =>
-        r.json(
+    responseMock.verify((response) => response.status(200), Times.Once());
+    responseMock.verify(
+      (response) =>
+        response.json(
           It.Is(
-            (b: any) =>
-              b.message === 'Product with id "prod-delete-id" was deleted successfully'
+            (body: any) =>
+              body.message === 'Product with id "prod-delete-id" was deleted successfully'
           )
         ),
       Times.Once()

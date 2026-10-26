@@ -5,20 +5,20 @@ import { IProductRepository } from '../../domain/repositories/product.repository
 export class UpdateProductUseCase {
   constructor(private readonly productRepository: IProductRepository) {}
 
-  async execute(id: string, dto: UpdateProductDTO): Promise<Product> {
+  async execute(id: string, dataTransferObject: UpdateProductDTO): Promise<Product> {
     const existing = await this.productRepository.findById(id);
     if (!existing) {
       throw new NotFoundError('Product', id);
     }
 
-    ProductEntity.validate(dto);
+    ProductEntity.validate(dataTransferObject);
 
     const updatedProduct: Product = {
       ...existing,
-      name: dto.name !== undefined ? dto.name.trim() : existing.name,
-      description: dto.description !== undefined ? dto.description.trim() : existing.description,
-      price: dto.price ?? existing.price,
-      stock: dto.stock ?? existing.stock,
+      name: dataTransferObject.name !== undefined ? dataTransferObject.name.trim() : existing.name,
+      description: dataTransferObject.description !== undefined ? dataTransferObject.description.trim() : existing.description,
+      price: dataTransferObject.price ?? existing.price,
+      stock: dataTransferObject.stock ?? existing.stock,
       updatedAt: new Date(),
     };
 
