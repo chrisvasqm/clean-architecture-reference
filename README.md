@@ -55,6 +55,25 @@ The system strictly adheres to the **Dependency Rule**: *dependencies only point
 
 ```text
 clean-architecture-reference/
+├── bruno/                               # Bruno API Workspace & Collection
+│   ├── workspace.yml                    # Bruno Workspace definition
+│   └── collections/
+│       └── clean-architecture-api/
+│           ├── bruno.json               # Collection manifest
+│           ├── collection.bru           # Collection-wide headers
+│           ├── environments/
+│           │   └── local.bru            # Environment variables (baseUrl, productId)
+│           ├── Health/
+│           │   └── Health Check.bru
+│           └── Products/
+│               ├── List Products.bru
+│               ├── Get Product by ID.bru
+│               ├── Create Product.bru   # Auto-sets productId on response
+│               ├── Update Product.bru
+│               ├── Delete Product.bru
+│               └── Errors/
+│                   ├── Create Product (Validation Error).bru
+│                   └── Get Product (Not Found).bru
 ├── src/
 │   ├── domain/
 │   │   ├── entities/
@@ -124,6 +143,26 @@ pnpm run typecheck
 pnpm run build
 pnpm start
 ```
+
+---
+
+## 🐶 Bruno Workspace & Collection
+
+The repository includes a ready-to-use [Bruno](https://www.usebruno.com/) workspace and collection in the `bruno/` directory.
+
+### How to Open in Bruno
+
+- **As a Workspace**: Open Bruno, click **Workspaces** > **Open Workspace**, and select the `bruno` folder.
+- **As a Collection**: Open Bruno, click **Open Collection**, and select `bruno/collections/clean-architecture-api`.
+
+### Environment & Variables
+
+- **Environment**: Select `local` from the environment dropdown in Bruno (configured in `environments/local.bru`).
+- **Variables**:
+  - `{{baseUrl}}`: Defaults to `http://localhost:3000`.
+  - `{{productId}}`: Defaults to `1` (seeded item).
+- **Auto-capturing IDs**: Running the **Create Product** request runs a post-response script (`script:post-response`) that automatically updates `{{productId}}` with the newly created product's UUID, making subsequent Get, Update, and Delete requests work instantly without manual copy-pasting!
+
 
 ---
 

@@ -4,8 +4,8 @@ import { IProductRepository } from '../../domain/repositories/product.repository
 export class InMemoryProductRepository implements IProductRepository {
   private readonly products = new Map<string, Product>();
 
-  constructor(initialData: Product[] = []) {
-    for (const item of initialData) {
+  constructor(products: Product[] = []) {
+    for (const item of products) {
       this.products.set(item.id, item);
     }
   }

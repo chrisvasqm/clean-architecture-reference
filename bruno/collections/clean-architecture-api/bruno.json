@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Clean Architecture Reference API",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

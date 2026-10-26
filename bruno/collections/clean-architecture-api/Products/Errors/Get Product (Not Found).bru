@@ -1,0 +1,11 @@
+meta {
+  name: Get Product (Not Found)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/products/non-existent-id
+  body: none
+  auth: none
+}

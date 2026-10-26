@@ -1,0 +1,7 @@
+opencollection: 1.0.0
+info:
+  name: "Clean Architecture Reference Workspace"
+  type: workspace
+collections:
+  - name: "clean-architecture-api"
+    path: "collections/clean-architecture-api"

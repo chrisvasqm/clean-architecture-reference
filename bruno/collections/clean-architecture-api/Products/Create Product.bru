@@ -1,0 +1,30 @@
+meta {
+  name: Create Product
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/products
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Custom 75% Mechanical Keyboard",
+    "description": "Hot-swappable switches with gasket mount and PBT keycaps",
+    "price": 149.99,
+    "stock": 20
+  }
+}
+
+script:post-response {
+  if (res.body && res.body.data && res.body.data.id) {
+    bru.setVar("productId", res.body.data.id);
+  }
+}
