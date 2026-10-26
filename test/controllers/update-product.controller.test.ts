@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, it } from 'vitest';
 import { It, Mock, Times } from 'moq.ts';
 import { Request, Response } from 'express';
 import { UpdateProductController } from '../../src/presentation/controllers/update-product.controller.js';
