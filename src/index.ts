@@ -4,7 +4,9 @@ import { DeleteProductUseCase } from './application/use-cases/delete-product.use
 import { GetProductUseCase } from './application/use-cases/get-product.use-case.js';
 import { ListProductsUseCase } from './application/use-cases/list-products.use-case.js';
 import { UpdateProductUseCase } from './application/use-cases/update-product.use-case.js';
+import { IProductRepository } from './domain/repositories/product.repository.interface.js';
 import { InMemoryProductRepository } from './infrastructure/repositories/in-memory-product.repository.js';
+import { PostgresProductRepository } from './infrastructure/repositories/postgres-product.repository.js';
 import { CreateProductController } from './presentation/controllers/create-product.controller.js';
 import { DeleteProductController } from './presentation/controllers/delete-product.controller.js';
 import { GetProductController } from './presentation/controllers/get-product.controller.js';
@@ -33,7 +35,9 @@ const initialProducts = [
   },
 ];
 
-const productRepository = new InMemoryProductRepository(initialProducts);
+const productRepository: IProductRepository = process.env.DATABASE_URL
+  ? new PostgresProductRepository()
+  : new InMemoryProductRepository(initialProducts);
 
 // 2. Application Layer (Use Cases)
 const createProductUseCase = new CreateProductUseCase(productRepository);
