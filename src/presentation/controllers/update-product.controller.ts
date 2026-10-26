@@ -1,17 +1,13 @@
 import { Request, Response } from 'express';
 import { UpdateProductUseCase } from '../../application/use-cases/update-product.use-case.js';
+import { updateProductSchema } from '../validation/product.schema.js';
 
 export class UpdateProductController {
   constructor(private readonly updateProductUseCase: UpdateProductUseCase) {}
 
   handle = async (request: Request<{ id: string }>, response: Response): Promise<void> => {
-    const { name, description, price, stock } = request.body;
-    const updated = await this.updateProductUseCase.execute(request.params.id, {
-      name,
-      description,
-      price,
-      stock,
-    });
+    const validated = updateProductSchema.parse(request.body);
+    const updated = await this.updateProductUseCase.execute(request.params.id, validated);
 
     response.status(200).json({
       data: updated,

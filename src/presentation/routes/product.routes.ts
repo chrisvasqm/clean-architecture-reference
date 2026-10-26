@@ -20,6 +20,7 @@ export function createProductRouter(controllers: ProductControllers): Router {
   router.get('/:id', controllers.getById.handle);
   router.post('/', controllers.create.handle);
   router.put('/:id', controllers.update.handle);
+  router.patch('/:id', controllers.update.handle);
   router.delete('/:id', controllers.delete.handle);
 
   return router;

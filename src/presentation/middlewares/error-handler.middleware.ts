@@ -1,4 +1,5 @@
 import { ErrorRequestHandler } from 'express';
+import { ZodError } from 'zod';
 import {
   ConflictError,
   DomainError,
@@ -7,6 +8,16 @@ import {
 } from '../../domain/errors/domain-errors.js';
 
 export const errorHandler: ErrorRequestHandler = (error, _request, response, _nextFunction) => {
+  if (error instanceof ZodError) {
+    const formatted = error.issues.map((issue) => issue.message).join('; ');
+    response.status(400).json({
+      error: 'Validation Error',
+      message: formatted,
+      details: error.issues,
+    });
+    return;
+  }
+
   if (error instanceof NotFoundError) {
     response.status(404).json({
       error: 'Not Found',

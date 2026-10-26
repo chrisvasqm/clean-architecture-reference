@@ -1,0 +1,21 @@
+meta {
+  name: Patch Product
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/api/products/{{productId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "price": 119.99
+  }
+}

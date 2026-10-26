@@ -29,6 +29,7 @@ describe('CreateProductController', () => {
   beforeEach(() => {
     useCaseMock = new Mock<CreateProductUseCase>();
     responseMock = new Mock<Response>();
+    responseMock.setup((response) => response.setHeader(It.IsAny(), It.IsAny())).returns(responseMock.object() as any);
     responseMock.setup((response) => response.status(201)).returns(responseMock.object());
     responseMock.setup((response) => response.json(It.IsAny())).returns(responseMock.object());
     controller = new CreateProductController(useCaseMock.object());
@@ -42,6 +43,7 @@ describe('CreateProductController', () => {
     await controller.handle({ body: payload } as Request, responseMock.object());
 
     // Assert
+    responseMock.verify((response) => response.setHeader('Location', `/api/products/${createdProduct.id}`), Times.Once());
     responseMock.verify((response) => response.status(201), Times.Once());
     responseMock.verify(
       (response) =>

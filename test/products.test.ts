@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { Express } from 'express';
+import { fileURLToPath } from 'node:url';
 import { createApplication } from '../src/app.js';
 import { CreateProductUseCase } from '../src/application/use-cases/create-product.use-case.js';
 import { DeleteProductUseCase } from '../src/application/use-cases/delete-product.use-case.js';
@@ -18,6 +19,7 @@ import { Product } from '../src/domain/entities/product.entity.js';
 describe('Products API', () => {
   let application: Express;
   let repository: InMemoryProductRepository;
+  const clientFixturePath = fileURLToPath(new URL('./fixtures/client', import.meta.url));
   const initialProducts: Product[] = [
     {
       id: '1',
@@ -48,7 +50,7 @@ describe('Products API', () => {
       update: new UpdateProductController(new UpdateProductUseCase(repository)),
       delete: new DeleteProductController(new DeleteProductUseCase(repository)),
     };
-    application = createApplication(controllers);
+    application = createApplication(controllers, { clientDistPath: clientFixturePath });
   });
 
   describe('GET /health', () => {
@@ -58,6 +60,13 @@ describe('Products API', () => {
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('status', 'ok');
       expect(response.body).toHaveProperty('timestamp');
+    });
+
+    it('should return 200 and serve HTML on root GET /', async () => {
+      const response = await request(application).get('/');
+
+      expect(response.status).toBe(200);
+      expect(response.headers['content-type']).toContain('text/html');
     });
   });
 
@@ -84,6 +93,7 @@ describe('Products API', () => {
       const response = await request(application).post('/api/products').send(payload);
 
       expect(response.status).toBe(201);
+      expect(response.headers['location']).toBe(`/api/products/${response.body.data.id}`);
       expect(response.body.message).toBe('Product created successfully');
       expect(response.body.data).toMatchObject({
         name: payload.name,
@@ -153,6 +163,22 @@ describe('Products API', () => {
       expect(response.body.message).toBe('Product updated successfully');
       expect(response.body.data.price).toBe(89.99);
       expect(response.body.data.stock).toBe(35);
+      expect(response.body.data.name).toBe('Mechanical Keyboard');
+    });
+
+    it('should support partial update via PATCH and return 200', async () => {
+      const patchPayload = {
+        price: 79.99,
+      };
+
+      const response = await request(application)
+        .patch('/api/products/1')
+        .send(patchPayload);
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe('Product updated successfully');
+      expect(response.body.data.price).toBe(79.99);
+      expect(response.body.data.stock).toBe(10);
       expect(response.body.data.name).toBe('Mechanical Keyboard');
     });
 
