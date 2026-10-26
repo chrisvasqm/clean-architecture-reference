@@ -31,12 +31,14 @@ pnpm dev
 
 The server will be available at `http://localhost:3000`.
 
-### 3. Run Integration Verification Test
+### 3. Run Test Suite
 
-Runs the end-to-end integration test covering all CRUD operations, domain validations, and error handling:
+Runs the automated test suite with Vitest and Supertest covering all CRUD endpoints, domain validations, and error handling:
 
 ```bash
 pnpm test
+# or in watch mode
+pnpm run test:watch
 ```
 
 ### 4. Typecheck and Build
@@ -145,8 +147,9 @@ clean-architecture-reference/
 │   │   └── routes/
 │   │       └── product.routes.ts        # Express route definitions
 │   ├── app.ts                           # Express app configuration and middleware
-│   ├── index.ts                         # Composition Root: wires dependencies and starts server
-│   └── verify.ts                        # End-to-end integration test runner
+│   └── index.ts                         # Composition Root: wires dependencies and starts server
+├── test/
+│   └── products.test.ts                 # Integration tests with Vitest and Supertest
 ├── dist/                                # Built bundle output (via esbuild)
 ├── package.json
 ├── pnpm-lock.yaml
