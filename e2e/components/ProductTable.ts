@@ -51,13 +51,7 @@ export class ProductTable {
     return new ProductRow(this.page, productName);
   }
 
-  get visibleRowCount(): Promise<number> {
-    return this.page.locator('tbody tr').count();
-  }
-
   async expectVisibleRowCount(count: number): Promise<void> {
-    await expect
-      .poll(async () => this.page.locator('tbody tr').count())
-      .toBe(count);
+    await expect(this.page.locator('tbody tr')).toHaveCount(count);
   }
 }

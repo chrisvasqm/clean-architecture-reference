@@ -49,10 +49,10 @@ test('creates, edits, searches for, and deletes a product', async ({ page }) => 
   await createForm.submit();
   await catalog.toast.expectMessage(`"${originalName}" added successfully`);
 
-  let productRow = catalog.table.row(originalName);
-  await productRow.expectVisible();
+  const createdRow = catalog.table.row(originalName);
+  await createdRow.expectVisible();
 
-  const editForm = await productRow.edit();
+  const editForm = await createdRow.edit();
   await editForm.fill({
     name: updatedName,
     price: 55.75,
@@ -61,15 +61,15 @@ test('creates, edits, searches for, and deletes a product', async ({ page }) => 
   await editForm.submit();
   await catalog.toast.expectMessage(`"${updatedName}" updated successfully`);
 
-  productRow = catalog.table.row(updatedName);
-  await productRow.expectVisible();
-  await productRow.expectPrice(55.75);
-  await productRow.expectStock(4);
+  const updatedRow = catalog.table.row(updatedName);
+  await updatedRow.expectVisible();
+  await updatedRow.expectPrice(55.75);
+  await updatedRow.expectStock(4);
 
   await catalog.search(updatedName);
   await catalog.table.expectVisibleRowCount(1);
 
-  await productRow.delete();
+  await updatedRow.delete();
   await catalog.toast.expectMessage(`"${updatedName}" deleted`);
-  await productRow.expectHidden();
+  await updatedRow.expectHidden();
 });

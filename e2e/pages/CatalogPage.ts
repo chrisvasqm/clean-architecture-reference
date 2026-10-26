@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import { ProductFormSheet } from '../components/ProductFormSheet.js';
 import { ProductTable } from '../components/ProductTable.js';
 import { Toast } from '../components/Toast.js';
@@ -12,6 +12,14 @@ export class CatalogPage {
     this.toast = new Toast(page);
   }
 
+  private get newProductButton(): Locator {
+    return this.page.getByRole('button', { name: 'New Product' });
+  }
+
+  private get searchBox(): Locator {
+    return this.page.getByRole('textbox', { name: 'Search products' });
+  }
+
   async open(): Promise<void> {
     await this.page.goto('/');
   }
@@ -20,19 +28,15 @@ export class CatalogPage {
     await expect(
       this.page.getByRole('heading', { level: 1, name: 'Products' })
     ).toBeVisible();
-    await expect(
-      this.page.getByRole('button', { name: 'New Product' })
-    ).toBeVisible();
-    await expect(
-      this.page.getByRole('textbox', { name: 'Search products' })
-    ).toBeVisible();
+    await expect(this.newProductButton).toBeVisible();
+    await expect(this.searchBox).toBeVisible();
     await expect(
       this.page.getByRole('button', { name: 'All', exact: true })
     ).toBeVisible();
   }
 
   async openNewProduct(): Promise<ProductFormSheet> {
-    await this.page.getByRole('button', { name: 'New Product' }).click();
+    await this.newProductButton.click();
 
     const form = ProductFormSheet.forCreate(this.page);
     await form.expectVisible();
@@ -40,6 +44,6 @@ export class CatalogPage {
   }
 
   async search(term: string): Promise<void> {
-    await this.page.getByRole('textbox', { name: 'Search products' }).fill(term);
+    await this.searchBox.fill(term);
   }
 }
