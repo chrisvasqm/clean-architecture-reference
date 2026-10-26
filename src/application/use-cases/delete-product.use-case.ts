@@ -5,10 +5,9 @@ export class DeleteProductUseCase {
   constructor(private readonly productRepository: IProductRepository) {}
 
   async execute(id: string): Promise<void> {
-    const existing = await this.productRepository.findById(id);
-    if (!existing) {
+    const deleted = await this.productRepository.delete(id);
+    if (!deleted) {
       throw new NotFoundError('Product', id);
     }
-    await this.productRepository.delete(id);
   }
 }

@@ -17,8 +17,8 @@ export class UpdateProductUseCase {
       ...existing,
       name: dto.name !== undefined ? dto.name.trim() : existing.name,
       description: dto.description !== undefined ? dto.description.trim() : existing.description,
-      price: dto.price !== undefined ? dto.price : existing.price,
-      stock: dto.stock !== undefined ? dto.stock : existing.stock,
+      price: dto.price ?? existing.price,
+      stock: dto.stock ?? existing.stock,
       updatedAt: new Date(),
     };
 
