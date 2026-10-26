@@ -19,9 +19,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenNew, productCount }) => {
               <Package className="h-4 w-4" />
             </div>
             <div className="flex items-center space-x-2">
-              <span className="font-semibold text-foreground text-sm tracking-tight">
+              <h1 className="font-semibold text-foreground text-sm tracking-tight">
                 Products
-              </span>
+              </h1>
               {productCount !== undefined && (
                 <Badge variant="secondary" className="text-xs px-2 py-0.5 font-normal">
                   {productCount}
