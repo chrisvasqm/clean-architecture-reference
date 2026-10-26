@@ -6,7 +6,7 @@ export class InMemoryProductRepository implements IProductRepository {
 
   constructor(products: Product[] = []) {
     for (const item of products) {
-      this.products.set(item.id, item);
+      this.products.set(item.id, { ...item });
     }
   }
 
@@ -17,14 +17,11 @@ export class InMemoryProductRepository implements IProductRepository {
 
   async findById(id: string): Promise<Product | null> {
     const product = this.products.get(id);
-    if (!product) {
-      return null;
-    }
-    return { ...product };
+    return product ? { ...product } : null;
   }
 
   async findAll(): Promise<Product[]> {
-    return Array.from(this.products.values()).map((p) => ({ ...p }));
+    return Array.from(this.products.values(), (p) => ({ ...p }));
   }
 
   async update(id: string, product: Product): Promise<Product> {
