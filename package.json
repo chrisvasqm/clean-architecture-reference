@@ -17,6 +17,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "e2e": "playwright test",
+    "gui": "playwright test --ui",
     "database:generate": "drizzle-kit generate",
     "database:migrate": "drizzle-kit migrate",
     "database:push": "drizzle-kit push",
@@ -40,6 +42,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@types/cors": "2.8.19",
     "@types/express": "5.0.6",
     "@types/node": "26.6.5",

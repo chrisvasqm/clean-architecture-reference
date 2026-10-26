@@ -41,6 +41,24 @@ pnpm test
 pnpm run test:watch
 ```
 
+### 3a. Run End-to-End Tests
+
+Playwright covers the client happy paths against the Docker stack. Install the Chromium browser once:
+
+```bash
+pnpm exec playwright install chromium
+```
+
+Then run the suite. Playwright reuses a running stack or starts one with Docker Compose automatically:
+
+```bash
+pnpm e2e
+# or interactively
+pnpm gui
+```
+
+Set `PLAYWRIGHT_BASE_URL` to test an already-running deployment instead.
+
 ### 4. Run the React Client (Single Route + React Query Caching)
 
 The project includes a single-route React dashboard powered by `@tanstack/react-query`:
