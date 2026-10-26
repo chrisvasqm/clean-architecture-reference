@@ -9,7 +9,11 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "database:generate": "drizzle-kit generate",
+    "database:migrate": "drizzle-kit migrate",
+    "database:push": "drizzle-kit push",
+    "database:studio": "drizzle-kit studio"
   },
   "keywords": [
     "clean-architecture",
@@ -22,12 +26,16 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "express": "5.3.0"
+    "drizzle-orm": "0.45.4",
+    "express": "5.3.0",
+    "pg": "8.23.1"
   },
   "devDependencies": {
     "@types/express": "5.0.6",
     "@types/node": "26.6.5",
+    "@types/pg": "8.23.1",
     "@types/supertest": "7.2.1",
+    "drizzle-kit": "0.31.11",
     "esbuild": "0.28.2",
     "moq.ts": "10.0.8",
     "supertest": "7.3.1",
