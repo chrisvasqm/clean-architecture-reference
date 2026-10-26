@@ -6,7 +6,52 @@ This project demonstrates how to structure a real-world CRUD application followi
 
 ---
 
-## 🏛️ Architecture Overview
+## Requirements
+
+- [Node.js](https://nodejs.org/) (v20+)
+- [pnpm](https://pnpm.io/) (v9+)
+
+---
+
+## Getting Started
+
+### 1. Install Dependencies
+
+```bash
+pnpm install
+```
+
+### 2. Run in Development Mode
+
+Starts the server with hot-reloading via `tsx`:
+
+```bash
+pnpm dev
+```
+
+The server will be available at `http://localhost:3000`.
+
+### 3. Run Integration Verification Test
+
+Runs the end-to-end integration test covering all CRUD operations, domain validations, and error handling:
+
+```bash
+pnpm test
+```
+
+### 4. Typecheck and Build
+
+Verifies types and bundles an optimized ESM production artifact using `esbuild`:
+
+```bash
+pnpm run typecheck
+pnpm run build
+pnpm start
+```
+
+---
+
+## Architecture Overview
 
 The system strictly adheres to the **Dependency Rule**: *dependencies only point inward*. Inner layers know nothing about outer layers.
 
@@ -51,11 +96,11 @@ The system strictly adheres to the **Dependency Rule**: *dependencies only point
 
 ---
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```text
 clean-architecture-reference/
-├── bruno/                               # Bruno API Workspace & Collection
+├── bruno/                               # Bruno API Workspace and Collection
 │   ├── workspace.yml                    # Bruno Workspace definition
 │   └── collections/
 │       └── clean-architecture-api/
@@ -99,8 +144,8 @@ clean-architecture-reference/
 │   │   │   └── error-handler.middleware.ts # Translates domain errors to HTTP responses
 │   │   └── routes/
 │   │       └── product.routes.ts        # Express route definitions
-│   ├── app.ts                           # Express app configuration & middleware
-│   ├── index.ts                         # Composition Root: wires dependencies & starts server
+│   ├── app.ts                           # Express app configuration and middleware
+│   ├── index.ts                         # Composition Root: wires dependencies and starts server
 │   └── verify.ts                        # End-to-end integration test runner
 ├── dist/                                # Built bundle output (via esbuild)
 ├── package.json
@@ -112,45 +157,11 @@ clean-architecture-reference/
 
 ---
 
-## 🚀 Quick Start
-
-### 1. Prerequisites
-- [Node.js](https://nodejs.org/) (v20+)
-- [pnpm](https://pnpm.io/) (v9+)
-
-### 2. Install Dependencies
-```bash
-pnpm install
-```
-
-### 3. Run in Development Mode
-Starts the server with hot-reloading via `tsx`:
-```bash
-pnpm dev
-```
-The server will be available at `http://localhost:3000`.
-
-### 4. Run Integration Verification Test
-Tests all CRUD operations, validations, and error handling:
-```bash
-pnpm test
-```
-
-### 5. Typecheck & Build
-Builds an optimized, production-ready bundle with `esbuild`:
-```bash
-pnpm run typecheck
-pnpm run build
-pnpm start
-```
-
----
-
-## 🐶 Bruno Workspace & Collection
+## Bruno Workspace and Collection
 
 The repository includes a ready-to-use [Bruno](https://www.usebruno.com/) workspace and collection in the `bruno/` directory covering every endpoint, error scenario, environment configuration, and dynamic variable propagation.
 
-### Workspace & Collection Structure
+### Workspace and Collection Structure
 
 ```text
 bruno/
@@ -193,7 +204,7 @@ bruno/
 2. **Open as a Collection**: In Bruno, click **Open Collection**, and select the `bruno/collections/clean-architecture-api` folder.
 3. **Select Environment**: Pick `local` from the environment dropdown in the top-right corner of Bruno.
 
-### Environment & Variables
+### Environment and Variables
 
 - **Configured in [`environments/local.bru`](bruno/collections/clean-architecture-api/environments/local.bru)**:
   - `{{baseUrl}}`: Defaults to `http://localhost:3000`.
@@ -213,10 +224,9 @@ script:post-response {
 
 This updates the `{{productId}}` runtime variable on the fly so subsequent **Get Product by ID**, **Update Product**, and **Delete Product** requests immediately use the new product's ID without manual copy-pasting.
 
-
 ---
 
-## 📡 API Reference & Sample Requests
+## API Reference and Sample Requests
 
 ### 1. Health Check
 ```bash
@@ -375,9 +385,9 @@ curl http://localhost:3000/api/products/unknown-id
 
 ---
 
-## 💡 Why This Approach?
+## Why This Approach?
 
 - **Zero Over-Engineering**: Avoids cumbersome Java-style abstractions or boilerplate decorators while maintaining clear boundaries.
 - **Testable**: Use cases and domain entities can be unit tested without starting an HTTP server or connecting to a database.
 - **Swappable Infrastructure**: Changing from In-Memory storage to Prisma/PostgreSQL only requires writing a new class implementing `IProductRepository` and plugging it into `src/index.ts`.
-- **Fast Build & Dev Workflow**: Instant startup and hot reloading with `tsx`, sub-millisecond production bundles with `esbuild`.
+- **Fast Build and Dev Workflow**: Instant startup and hot reloading with `tsx`, sub-millisecond production bundles with `esbuild`.
