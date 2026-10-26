@@ -26,26 +26,22 @@ export interface UpdateProductDTO {
 
 export class ProductEntity {
   static validate(props: Partial<Product>): void {
-    if (props.name !== undefined) {
-      if (!props.name || props.name.trim().length < 2) {
-        throw new ValidationError('Product name must be at least 2 characters long.');
-      }
+    if (props.name !== undefined && props.name.trim().length < 2) {
+      throw new ValidationError('Product name must be at least 2 characters long.');
     }
 
-    if (props.price !== undefined) {
-      if (typeof props.price !== 'number' || Number.isNaN(props.price) || props.price < 0) {
-        throw new ValidationError('Product price must be a non-negative number.');
-      }
+    if (
+      props.price !== undefined &&
+      (typeof props.price !== 'number' || Number.isNaN(props.price) || props.price < 0)
+    ) {
+      throw new ValidationError('Product price must be a non-negative number.');
     }
 
-    if (props.stock !== undefined) {
-      if (
-        typeof props.stock !== 'number' ||
-        !Number.isInteger(props.stock) ||
-        props.stock < 0
-      ) {
-        throw new ValidationError('Product stock must be a non-negative integer.');
-      }
+    if (
+      props.stock !== undefined &&
+      (typeof props.stock !== 'number' || !Number.isInteger(props.stock) || props.stock < 0)
+    ) {
+      throw new ValidationError('Product stock must be a non-negative integer.');
     }
   }
 
@@ -53,7 +49,7 @@ export class ProductEntity {
     if (!dto.name) {
       throw new ValidationError('Product name is required.');
     }
-    if (dto.price === undefined || dto.price === null) {
+    if (dto.price == null) {
       throw new ValidationError('Product price is required.');
     }
 
