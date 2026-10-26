@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS products (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
--- Seed initial products if table is empty
+-- Seed initial products
 INSERT INTO products (id, name, description, price, stock, created_at, updated_at)
 VALUES
   ('1', 'Mechanical Keyboard', 'Hot-swappable mechanical keyboard with RGB backlighting', 99.99, 25, NOW(), NOW()),

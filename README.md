@@ -8,8 +8,8 @@ This project demonstrates how to structure a real-world CRUD application followi
 
 ## Requirements
 
-- [Node.js](https://nodejs.org/) (v20+)
-- [pnpm](https://pnpm.io/) (v9+)
+- [Node.js](https://nodejs.org/) (v22.13+)
+- [pnpm](https://pnpm.io/) (v11+)
 
 ---
 
@@ -155,7 +155,7 @@ All endpoints adhere to REST conventions with consistent status codes, resource-
 | `GET` | `/api/products` | Retrieve all products | `200 OK` | `{ data: Product[], count: number }` |
 | `GET` | `/api/products/:id` | Retrieve single product by ID | `200 OK` (or `404`) | `{ data: Product }` |
 | `POST` | `/api/products` | Create a new product | `201 Created` | `Location: /api/products/:id`, `{ data, message }` |
-| `PUT` | `/api/products/:id` | Replace / update product | `200 OK` | `{ data, message }` |
+| `PUT` | `/api/products/:id` | Replace product (name and price required) | `200 OK` | `{ data, message }` |
 | `PATCH`| `/api/products/:id` | Partial update product | `200 OK` | `{ data, message }` |
 | `DELETE`| `/api/products/:id` | Delete product | `200 OK` (or `404`) | `{ message }` |
 
