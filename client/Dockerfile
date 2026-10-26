@@ -1,16 +1,16 @@
 # ==========================================
 # 1. Frontend Client Builder (Vite + React)
 # ==========================================
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@11.28.8 --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY client/package.json ./client/
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --filter clean-architecture-client...
 
 COPY client/ ./client/
 

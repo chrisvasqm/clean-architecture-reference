@@ -1,16 +1,16 @@
 # ==========================================
 # 1. Backend API Builder
 # ==========================================
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@11.28.8 --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY client/package.json ./client/
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --filter clean-architecture-reference
 
 COPY tsconfig.json ./
 COPY src/ ./src/
@@ -20,17 +20,17 @@ RUN pnpm run build
 # ==========================================
 # 2. Production Runner
 # ==========================================
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@11.28.8 --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod --frozen-lockfile --filter clean-architecture-reference
 
 COPY --from=builder /app/dist ./dist
 
