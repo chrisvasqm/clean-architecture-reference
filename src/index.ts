@@ -5,7 +5,11 @@ import { GetProductUseCase } from './application/use-cases/get-product.use-case.
 import { ListProductsUseCase } from './application/use-cases/list-products.use-case.js';
 import { UpdateProductUseCase } from './application/use-cases/update-product.use-case.js';
 import { InMemoryProductRepository } from './infrastructure/repositories/in-memory-product.repository.js';
-import { ProductController } from './presentation/controllers/product.controller.js';
+import { CreateProductController } from './presentation/controllers/create-product.controller.js';
+import { DeleteProductController } from './presentation/controllers/delete-product.controller.js';
+import { GetProductController } from './presentation/controllers/get-product.controller.js';
+import { ListProductsController } from './presentation/controllers/list-products.controller.js';
+import { UpdateProductController } from './presentation/controllers/update-product.controller.js';
 
 // 1. Infrastructure Layer
 const initialProducts = [
@@ -38,17 +42,17 @@ const listProductsUseCase = new ListProductsUseCase(productRepository);
 const updateProductUseCase = new UpdateProductUseCase(productRepository);
 const deleteProductUseCase = new DeleteProductUseCase(productRepository);
 
-// 3. Presentation Layer
-const productController = new ProductController(
-  createProductUseCase,
-  getProductUseCase,
-  listProductsUseCase,
-  updateProductUseCase,
-  deleteProductUseCase
-);
+// 3. Presentation Layer (Single-Action Controllers)
+const productControllers = {
+  create: new CreateProductController(createProductUseCase),
+  getById: new GetProductController(getProductUseCase),
+  list: new ListProductsController(listProductsUseCase),
+  update: new UpdateProductController(updateProductUseCase),
+  delete: new DeleteProductController(deleteProductUseCase),
+};
 
 // 4. Composition Root
-const app = createApp(productController);
+const app = createApp(productControllers);
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.listen(PORT, () => {

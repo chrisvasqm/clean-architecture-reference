@@ -8,7 +8,11 @@ import { GetProductUseCase } from '../src/application/use-cases/get-product.use-
 import { ListProductsUseCase } from '../src/application/use-cases/list-products.use-case.js';
 import { UpdateProductUseCase } from '../src/application/use-cases/update-product.use-case.js';
 import { InMemoryProductRepository } from '../src/infrastructure/repositories/in-memory-product.repository.js';
-import { ProductController } from '../src/presentation/controllers/product.controller.js';
+import { CreateProductController } from '../src/presentation/controllers/create-product.controller.js';
+import { DeleteProductController } from '../src/presentation/controllers/delete-product.controller.js';
+import { GetProductController } from '../src/presentation/controllers/get-product.controller.js';
+import { ListProductsController } from '../src/presentation/controllers/list-products.controller.js';
+import { UpdateProductController } from '../src/presentation/controllers/update-product.controller.js';
 import { Product } from '../src/domain/entities/product.entity.js';
 
 describe('Products API', () => {
@@ -37,14 +41,14 @@ describe('Products API', () => {
 
   beforeEach(() => {
     repository = new InMemoryProductRepository(initialProducts);
-    const controller = new ProductController(
-      new CreateProductUseCase(repository),
-      new GetProductUseCase(repository),
-      new ListProductsUseCase(repository),
-      new UpdateProductUseCase(repository),
-      new DeleteProductUseCase(repository)
-    );
-    app = createApp(controller);
+    const controllers = {
+      create: new CreateProductController(new CreateProductUseCase(repository)),
+      getById: new GetProductController(new GetProductUseCase(repository)),
+      list: new ListProductsController(new ListProductsUseCase(repository)),
+      update: new UpdateProductController(new UpdateProductUseCase(repository)),
+      delete: new DeleteProductController(new DeleteProductUseCase(repository)),
+    };
+    app = createApp(controllers);
   });
 
   describe('GET /health', () => {

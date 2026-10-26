@@ -1,9 +1,8 @@
 import express, { Express } from 'express';
 import { errorHandler } from './presentation/middlewares/error-handler.middleware.js';
-import { ProductController } from './presentation/controllers/product.controller.js';
-import { createProductRouter } from './presentation/routes/product.routes.js';
+import { createProductRouter, ProductControllers } from './presentation/routes/product.routes.js';
 
-export function createApp(productController: ProductController): Express {
+export function createApp(productControllers: ProductControllers): Express {
   const app = express();
 
   app.use(express.json());
@@ -14,7 +13,7 @@ export function createApp(productController: ProductController): Express {
   });
 
   // API routes
-  app.use('/api/products', createProductRouter(productController));
+  app.use('/api/products', createProductRouter(productControllers));
 
   // Fallback 404 for undefined routes
   app.use((_req, res) => {
