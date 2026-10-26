@@ -6,7 +6,7 @@ import { errorHandler } from './presentation/middlewares/error-handler.middlewar
 import { createProductRouter, ProductControllers } from './presentation/routes/product.routes.js';
 
 export interface ApplicationOptions {
-  clientDistPath?: string;
+  clientDistributionPath?: string;
 }
 
 export function createApplication(
@@ -27,12 +27,10 @@ export function createApplication(
   application.use('/api/products', createProductRouter(productControllers));
 
   // Serve static client assets if client/dist exists
-  const clientDistPath = options.clientDistPath ?? path.resolve(process.cwd(), 'client', 'dist');
-  if (fs.existsSync(clientDistPath)) {
-    application.use(express.static(clientDistPath));
-    application.get('/', (_request, response) => {
-      response.sendFile(path.join(clientDistPath, 'index.html'));
-    });
+  const clientDistributionPath =
+    options.clientDistributionPath ?? path.resolve(process.cwd(), 'client', 'dist');
+  if (fs.existsSync(clientDistributionPath)) {
+    application.use(express.static(clientDistributionPath));
   }
 
   // Fallback 404 for undefined routes

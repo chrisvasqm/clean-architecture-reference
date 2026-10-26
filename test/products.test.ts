@@ -14,12 +14,15 @@ import { DeleteProductController } from '../src/presentation/controllers/delete-
 import { GetProductController } from '../src/presentation/controllers/get-product.controller.js';
 import { ListProductsController } from '../src/presentation/controllers/list-products.controller.js';
 import { UpdateProductController } from '../src/presentation/controllers/update-product.controller.js';
+import { ProductControllers } from '../src/presentation/routes/product.routes.js';
 import { Product } from '../src/domain/entities/product.entity.js';
 
 describe('Products API', () => {
   let application: Express;
   let repository: InMemoryProductRepository;
+  let controllers: ProductControllers;
   const clientFixturePath = fileURLToPath(new URL('./fixtures/client', import.meta.url));
+  const missingClientPath = fileURLToPath(new URL('./fixtures/missing-client', import.meta.url));
   const initialProducts: Product[] = [
     {
       id: '1',
@@ -43,14 +46,16 @@ describe('Products API', () => {
 
   beforeEach(() => {
     repository = new InMemoryProductRepository(initialProducts);
-    const controllers = {
+    controllers = {
       create: new CreateProductController(new CreateProductUseCase(repository)),
       getById: new GetProductController(new GetProductUseCase(repository)),
       list: new ListProductsController(new ListProductsUseCase(repository)),
       update: new UpdateProductController(new UpdateProductUseCase(repository)),
       delete: new DeleteProductController(new DeleteProductUseCase(repository)),
     };
-    application = createApplication(controllers, { clientDistPath: clientFixturePath });
+    application = createApplication(controllers, {
+      clientDistributionPath: clientFixturePath,
+    });
   });
 
   describe('GET /health', () => {
@@ -61,12 +66,25 @@ describe('Products API', () => {
       expect(response.body).toHaveProperty('status', 'ok');
       expect(response.body).toHaveProperty('timestamp');
     });
+  });
 
-    it('should return 200 and serve HTML on root GET /', async () => {
+  describe('GET / (static client)', () => {
+    it('should serve the built client index when present', async () => {
       const response = await request(application).get('/');
 
       expect(response.status).toBe(200);
       expect(response.headers['content-type']).toContain('text/html');
+    });
+
+    it('should return 404 when the client build is missing', async () => {
+      const applicationWithoutClient = createApplication(controllers, {
+        clientDistributionPath: missingClientPath,
+      });
+
+      const response = await request(applicationWithoutClient).get('/');
+
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe('Not Found');
     });
   });
 
@@ -104,9 +122,19 @@ describe('Products API', () => {
       expect(response.body.data.id).toBeDefined();
     });
 
-    it('should return 400 when name is missing or too short', async () => {
+    it('should return 400 when name is too short', async () => {
       const response = await request(application).post('/api/products').send({
         name: '',
+        price: 50,
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('Validation Error');
+      expect(response.body.message).toContain('at least 2 characters');
+    });
+
+    it('should return 400 when name is missing', async () => {
+      const response = await request(application).post('/api/products').send({
         price: 50,
       });
 
@@ -149,31 +177,67 @@ describe('Products API', () => {
   });
 
   describe('PUT /api/products/:id', () => {
-    it('should update the product and return 200', async () => {
-      const updatePayload = {
+    it('should replace the product and return 200', async () => {
+      const replacementPayload = {
+        name: 'Mechanical Keyboard',
+        description: 'Hot-swappable RGB keyboard',
         price: 89.99,
         stock: 35,
       };
 
       const response = await request(application)
         .put('/api/products/1')
-        .send(updatePayload);
+        .send(replacementPayload);
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe('Product updated successfully');
-      expect(response.body.data.price).toBe(89.99);
-      expect(response.body.data.stock).toBe(35);
-      expect(response.body.data.name).toBe('Mechanical Keyboard');
+      expect(response.body.data).toMatchObject(replacementPayload);
     });
 
-    it('should support partial update via PATCH and return 200', async () => {
-      const patchPayload = {
-        price: 79.99,
-      };
+    it('should return 400 when a replacement omits the name', async () => {
+      const response = await request(application)
+        .put('/api/products/1')
+        .send({ price: 89.99 });
 
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('Validation Error');
+      expect(response.body.message).toContain('Product name is required');
+    });
+
+    it('should return 404 when replacing a non-existent product', async () => {
+      const response = await request(application)
+        .put('/api/products/non-existent-id')
+        .send({
+          name: 'Mechanical Keyboard',
+          description: 'Hot-swappable RGB keyboard',
+          price: 100,
+          stock: 1,
+        });
+
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe('Not Found');
+    });
+
+    it('should return 400 when replacing with invalid values', async () => {
+      const response = await request(application)
+        .put('/api/products/1')
+        .send({
+          name: 'Mechanical Keyboard',
+          description: 'Hot-swappable RGB keyboard',
+          price: -25,
+          stock: 1,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('Validation Error');
+    });
+  });
+
+  describe('PATCH /api/products/:id', () => {
+    it('should partially update the product and return 200', async () => {
       const response = await request(application)
         .patch('/api/products/1')
-        .send(patchPayload);
+        .send({ price: 79.99 });
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe('Product updated successfully');
@@ -182,22 +246,12 @@ describe('Products API', () => {
       expect(response.body.data.name).toBe('Mechanical Keyboard');
     });
 
-    it('should return 404 when updating non-existent product', async () => {
-      const response = await request(application)
-        .put('/api/products/non-existent-id')
-        .send({ price: 100 });
-
-      expect(response.status).toBe(404);
-      expect(response.body.error).toBe('Not Found');
-    });
-
-    it('should return 400 when updating with invalid values', async () => {
-      const response = await request(application)
-        .put('/api/products/1')
-        .send({ price: -25 });
+    it('should return 400 when the patch payload is empty', async () => {
+      const response = await request(application).patch('/api/products/1').send({});
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('Validation Error');
+      expect(response.body.message).toContain('At least one product field');
     });
   });
 
