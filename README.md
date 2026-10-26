@@ -51,6 +51,32 @@ pnpm run build
 pnpm start
 ```
 
+### 5. Run with PostgreSQL & Docker Compose
+
+Start the PostgreSQL container:
+
+```bash
+docker compose up -d
+```
+
+Push the Drizzle schema to the database:
+
+```bash
+pnpm run database:push
+```
+
+Run the application connected to PostgreSQL:
+
+```bash
+DATABASE_URL="postgres://postgres:postgrespassword@localhost:5432/products_db" pnpm dev
+```
+
+Inspect the database in Drizzle Studio:
+
+```bash
+pnpm run database:studio
+```
+
 ---
 
 ## Architecture Overview
@@ -87,8 +113,9 @@ The system strictly adheres to the **Dependency Rule**: *dependencies only point
    - Focused use cases (`CreateProductUseCase`, `GetProductUseCase`, `ListProductsUseCase`, `UpdateProductUseCase`, `DeleteProductUseCase`).
    - Orchestrates entities and domain repository contracts.
 3. **Infrastructure Layer (`src/infrastructure/`)**
-   - Implements domain repository interfaces (`InMemoryProductRepository`).
-   - Can easily be swapped out for PostgreSQL, SQLite, Prisma, or MongoDB without changing any business logic.
+   - Implements domain repository interfaces (`InMemoryProductRepository`, `PostgresProductRepository`).
+   - Connects to PostgreSQL using Drizzle ORM and `pg` (`node-postgres`) with connection pooling.
+   - Can easily be swapped out without changing any application or domain logic.
 4. **Presentation Layer (`src/presentation/`)**
    - HTTP transport using Express single-action controllers (`CreateProductController`, `GetProductController`, etc.) and `createProductRouter`.
    - Centralized error handler mapping domain errors (`NotFoundError`, `ValidationError`, `ConflictError`) to appropriate HTTP status codes (404, 400, 409).
@@ -102,5 +129,5 @@ The system strictly adheres to the **Dependency Rule**: *dependencies only point
 
 - **Zero Over-Engineering**: Avoids cumbersome Java-style abstractions or boilerplate decorators while maintaining clear boundaries.
 - **Testable**: Use cases and domain entities can be unit tested without starting an HTTP server or connecting to a database.
-- **Swappable Infrastructure**: Changing from In-Memory storage to Prisma/PostgreSQL only requires writing a new class implementing `IProductRepository` and plugging it into `src/index.ts`.
+- **Swappable Infrastructure**: Changing from In-Memory storage to PostgreSQL (via Drizzle ORM) only requires swapping the repository implementation in `src/index.ts` without touching use cases or entities.
 - **Fast Build and Dev Workflow**: Instant startup and hot reloading with `tsx`, sub-millisecond production bundles with `esbuild`.
